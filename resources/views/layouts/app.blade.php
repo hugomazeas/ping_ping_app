@@ -94,6 +94,21 @@
             33% { transform: translate(30px, -50px) scale(1.1); }
             66% { transform: translate(-20px, 20px) scale(0.9); }
         }
+
+        /* Enhanced keyboard focus styles for accessibility */
+        *:focus {
+            outline: none;
+        }
+
+        kbd {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875em;
+            font-family: monospace;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 0.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
     </style>
 </head>
 <body class="gradient-bg text-white min-h-screen font-body overflow-x-hidden">
@@ -104,10 +119,16 @@
         <div class="blob w-64 h-64 bg-cyan-500 bottom-0 left-1/3" style="animation-delay: -4s;"></div>
     </div>
 
-    <div class="relative container mx-auto px-4 py-8 max-w-4xl">
+    <div class="relative mx-auto px-8 py-6 w-full h-screen overflow-hidden flex flex-col">
         @if(session('error'))
             <div class="bg-red-500/30 backdrop-blur border-2 border-red-400 text-red-200 px-6 py-4 rounded-2xl mb-6 font-semibold animate-wiggle">
                 ⚠️ {{ session('error') }}
+            </div>
+        @endif
+
+        @if(session('success'))
+            <div class="bg-green-500/30 backdrop-blur border-2 border-green-400 text-green-200 px-6 py-4 rounded-2xl mb-6 font-semibold">
+                {{ session('success') }}
             </div>
         @endif
 

@@ -9,10 +9,11 @@ class Player extends Model
 {
     public $timestamps = false;
 
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'elo_rating'];
 
     protected $casts = [
         'created_at' => 'datetime',
+        'elo_rating' => 'integer',
     ];
 
     public function gamesAsPlayer1(): HasMany
@@ -38,7 +39,7 @@ class Player extends Model
 
     public function completedGames()
     {
-        return $this->allGames()->whereNotNull('ended_at');
+        return $this->allGames()->whereNotNull('ended_at')->where('elo_applied', true);
     }
 
     public function getTotalGamesAttribute(): int
@@ -48,7 +49,7 @@ class Player extends Model
 
     public function getTotalWinsAttribute(): int
     {
-        return $this->wins()->whereNotNull('ended_at')->count();
+        return $this->wins()->whereNotNull('ended_at')->where('elo_applied', true)->count();
     }
 
     public function getTotalLossesAttribute(): int
@@ -86,7 +87,7 @@ class Player extends Model
         })->orWhere(function ($query) use ($opponent) {
             $query->where('player1_id', $opponent->id)
                 ->where('player2_id', $this->id);
-        })->whereNotNull('ended_at')->get();
+        })->whereNotNull('ended_at')->where('elo_applied', true)->get();
 
         $wins = $games->where('winner_id', $this->id)->count();
         $losses = $games->where('winner_id', $opponent->id)->count();
@@ -125,5 +126,37 @@ class Player extends Model
             'type' => $isWinning ? 'win' : 'loss',
             'count' => $count,
         ];
+    }
+
+    /**
+     * Calculate ELO rating change based on game result
+     *
+     * @param Player $opponent
+     * @param float $score (1 for win, 0.5 for draw, 0 for loss)
+     * @param int $kFactor (default 32)
+     * @return int The rating change
+     */
+    public function calculateEloChange(Player $opponent, float $score, int $kFactor = 32): int
+    {
+        // Expected score formula: 1 / (1 + 10^((opponentRating - playerRating) / 400))
+        $expectedScore = 1 / (1 + pow(10, ($opponent->elo_rating - $this->elo_rating) / 400));
+
+        // Rating change: K * (actual score - expected score)
+        $ratingChange = round($kFactor * ($score - $expectedScore));
+
+        return (int) $ratingChange;
+    }
+
+    /**
+     * Update ELO rating after a game
+     *
+     * @param Player $opponent
+     * @param float $score (1 for win, 0.5 for draw, 0 for loss)
+     */
+    public function updateEloRating(Player $opponent, float $score): void
+    {
+        $change = $this->calculateEloChange($opponent, $score);
+        $this->elo_rating += $change;
+        $this->save();
     }
 }

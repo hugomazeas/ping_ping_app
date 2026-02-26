@@ -8,23 +8,11 @@ use Illuminate\Http\Request;
 
 class StatsController extends Controller
 {
-    public function index()
-    {
-        $recentGames = Game::with(['player1', 'player2', 'winner'])
-            ->whereNotNull('ended_at')
-            ->orderBy('ended_at', 'desc')
-            ->limit(10)
-            ->get();
-
-        $players = Player::all();
-
-        return view('stats', compact('recentGames', 'players'));
-    }
-
     public function player(Player $player)
     {
         $games = $player->completedGames()
             ->with(['player1', 'player2', 'winner'])
+            ->whereNotNull('ended_at')  // Extra safeguard
             ->orderBy('ended_at', 'desc')
             ->get();
 
@@ -57,16 +45,17 @@ class StatsController extends Controller
                 'id' => $player->id,
                 'name' => $player->name,
                 'total_games' => $player->total_games,
-                'wins' => $player->total_wins,
-                'losses' => $player->total_losses,
+                'total_wins' => $player->total_wins,
+                'total_losses' => $player->total_losses,
                 'win_rate' => $player->win_rate,
+                'elo_rating' => $player->elo_rating,
             ];
         });
 
-        // Filter to players with at least 1 game, then sort by win rate
+        // Filter to players with at least 1 game, then sort by ELO rating
         $leaderboard = $players
             ->filter(fn($p) => $p['total_games'] >= 1)
-            ->sortByDesc('win_rate')
+            ->sortByDesc('elo_rating')
             ->values();
 
         return response()->json($leaderboard);

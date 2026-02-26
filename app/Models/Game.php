@@ -18,6 +18,9 @@ class Game extends Model
         'mode',
         'started_at',
         'ended_at',
+        'current_server_id',
+        'serve_count',
+        'elo_applied',
     ];
 
     protected $casts = [
@@ -25,6 +28,8 @@ class Game extends Model
         'ended_at' => 'datetime',
         'player1_score' => 'integer',
         'player2_score' => 'integer',
+        'serve_count' => 'integer',
+        'elo_applied' => 'boolean',
     ];
 
     public function player1(): BelongsTo
@@ -40,6 +45,11 @@ class Game extends Model
     public function winner(): BelongsTo
     {
         return $this->belongsTo(Player::class, 'winner_id');
+    }
+
+    public function currentServer(): BelongsTo
+    {
+        return $this->belongsTo(Player::class, 'current_server_id');
     }
 
     public function getLoserAttribute(): ?Player
@@ -69,6 +79,33 @@ class Game extends Model
         $seconds = $duration % 60;
 
         return sprintf('%02d:%02d', $minutes, $seconds);
+    }
+
+    public function getServeNumberAttribute(): int
+    {
+        return ($this->serve_count % 2) + 1; // Returns 1 or 2
+    }
+
+    public function updateServerBasedOnScore(): void
+    {
+        $totalScore = $this->player1_score + $this->player2_score;
+
+        // Check if we're in deuce (both players at 10 or above)
+        $inDeuce = false;
+        if ($this->mode !== 'freestyle') {
+            $inDeuce = $this->player1_score >= 10 && $this->player2_score >= 10;
+        }
+
+        // In deuce, serve changes every point
+        // Otherwise, serve changes every 2 points
+        $serveInterval = $inDeuce ? 1 : 2;
+
+        // Determine who should be serving based on total score
+        $serverIndex = floor($totalScore / $serveInterval) % 2;
+        $this->current_server_id = $serverIndex === 0 ? $this->player1_id : $this->player2_id;
+
+        // Update serve count for display (1st or 2nd serve)
+        $this->serve_count = $totalScore % $serveInterval;
     }
 
     public function isComplete(): bool

@@ -19,6 +19,11 @@ Route::post('/game/{game}/end', [GameController::class, 'end'])->name('game.end'
 Route::post('/game/{game}/rematch', [GameController::class, 'rematch'])->name('game.rematch');
 
 // Stats
-Route::get('/stats', [StatsController::class, 'index'])->name('stats');
 Route::get('/stats/{player}', [StatsController::class, 'player'])->name('stats.player');
 Route::get('/api/leaderboard', [StatsController::class, 'leaderboard'])->name('api.leaderboard');
+
+// Settings
+Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'index'])->name('settings');
+Route::delete('/settings/clear-games', [App\Http\Controllers\SettingsController::class, 'clearGames'])->name('settings.clear-games');
+Route::delete('/settings/clear-all', [App\Http\Controllers\SettingsController::class, 'clearAll'])->name('settings.clear-all');
+Route::delete('/settings/cleanup-incomplete', [App\Http\Controllers\SettingsController::class, 'cleanupIncomplete'])->name('settings.cleanup-incomplete');
